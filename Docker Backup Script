@@ -1,0 +1,57 @@
+#!/bin/bash
+
+
+time=$(date +"%Y-%m-%d%-H:%M:%S")
+
+
+containers=$(docker ps -a --format '{{.ID}} {{.Names}}')
+
+
+for i in {0..15}; do
+printf "\r%s" "${spinner:$i:1}"
+sleep 0.2
+done
+
+for container in $containers;
+ do
+
+
+  container_id=$(echo $container | cut -d ' ' -f1)
+  container_name=$(echo $container | cut -d ' ' -f2)
+
+
+  backup_dir="/root/docker-backup/$container_name"
+  mkdir -p $backup_dir
+
+
+  container_image=$(docker inspect -f '{{.Image}}' $container_id)
+
+
+  docker save  $container_image -o $backup_dir/$container_name-$time.tar
+
+  container_logs=$(docker logs $container_id)
+
+
+  echo "$time $container_name $container_logs" > $backup_dir/logs-$time.txt
+
+done
+
+
+log_file="/root/docker-backup/$container_name"
+log_size=$(stat -c%s $log_file)
+
+
+if [[ $log_size -gt 4096000 ]];
+ then
+
+  gzip $log_file
+
+  rm -f $log_file
+
+
+  touch $log_file
+
+
+  find /root/docker-backup/backuplog.log.* -mtime +3 -exec rm -f {} \;
+
+fi
