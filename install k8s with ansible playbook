@@ -1,7 +1,6 @@
 - hosts: "masters, workers"
   gather_facts: yes
  
-
   tasks:
    - name: Make the Swap inactive
      command: swapoff -a
